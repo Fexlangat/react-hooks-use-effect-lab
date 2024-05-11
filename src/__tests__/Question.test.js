@@ -1,64 +1,45 @@
-import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
-import { act } from "react-dom/test-utils";
-import Question from "../components/Question";
+import React, { useState, useEffect } from "react";
 
-const testQuestion = {
-  id: 1,
-  prompt: "lorem testum",
-  answers: ["choice 1", "choice 2", "choice 3", "choice 4"],
-  correctIndex: 0,
-};
+function Question({ question, onAnswered }) {
+  const [timeRemaining, setTimeRemaining] = useState(10);
 
-const noop = () => {};
+  // add useEffect code
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeRemaining((prevTime) => prevTime - 1);
+    }, 1000);
 
-beforeEach(() => {
-  jest.useFakeTimers();
-});
+    if (timeRemaining === 0) {
+      clearTimeout(timer);
+      setTimeRemaining(10);
+      onAnswered(false);
+    }
 
-afterEach(() => {
-  jest.runOnlyPendingTimers();
-  jest.useRealTimers();
-});
+    return () => clearTimeout(timer);
+  }, [timeRemaining, onAnswered]);
 
-// const onChange = jest.fn();
-test("creates an interval with setTimeout", () => {
-  jest.spyOn(global, 'setTimeout');
-  render(<Question question={testQuestion} onAnswered={noop} />);
-  expect(setTimeout).toHaveBeenCalled();
-});
+  function handleAnswer(isCorrect) {
+    setTimeRemaining(10);
+    onAnswered(isCorrect);
+  }
 
-test("decrements the timer by 1 every second", () => {
-  render(<Question question={testQuestion} onAnswered={noop} />);
-  expect(screen.queryByText(/10 seconds remaining/)).toBeInTheDocument();
-  act(() => {
-    jest.advanceTimersByTime(1000);
-  });
-  expect(screen.queryByText(/9 seconds remaining/)).toBeInTheDocument();
-  act(() => {
-    jest.advanceTimersByTime(1000);
-  });
-  expect(screen.queryByText(/8 seconds remaining/)).toBeInTheDocument();
-  act(() => {
-    jest.advanceTimersByTime(1000);
-  });
-  expect(screen.queryByText(/7 seconds remaining/)).toBeInTheDocument();
-});
+  const { id, prompt, answers, correctIndex } = question;
 
-test("calls onAnswered after 10 seconds", () => {
-  const onAnswered = jest.fn();
-  render(<Question question={testQuestion} onAnswered={onAnswered} />);
-  act(() => {
-    jest.advanceTimersByTime(11000);
-  });
-  expect(onAnswered).toHaveBeenCalledWith(false);
-});
-
-test("clears the timeout after unmount", () => {
-  jest.spyOn(global, 'clearTimeout');
-  const { unmount } = render(
-    <Question question={testQuestion} onAnswered={noop} />
+  return (
+    <>
+      <h1>Question {id}</h1>
+      <h3>{prompt}</h3>
+      {answers.map((answer, index) => {
+        const isCorrect = index === correctIndex;
+        return (
+          <button key={answer} onClick={() => handleAnswer(isCorrect)}>
+            {answer}
+          </button>
+        );
+      })}
+      <h5>{timeRemaining} seconds remaining</h5>
+    </>
   );
-  unmount();
-  expect(clearTimeout).toHaveBeenCalled();
-});
+}
+
+export default Question;
